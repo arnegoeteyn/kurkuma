@@ -18,8 +18,6 @@ runAction connectionString action = runStdoutLoggingT
   $ withPostgresqlConn connectionString
   $ \backend -> runReaderT action backend
 
--- migrateDB :: PGInfo -> IO ()
--- migrateDB connString = runAction connString (runMigration migrateAll)
 logFilter :: a -> LogLevel -> Bool
 logFilter _ LevelError = True
 logFilter _ LevelWarn = True

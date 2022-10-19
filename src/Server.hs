@@ -14,15 +14,25 @@ import           Control.Monad.Cont
 import           Data.Int (Int64)
 import           Repositories.Recipe
 import           Servant (throwError)
+import           Schema
 
-type RecipesAPI = "recipes" :> Get '[JSON] [Entity Recipe]
-  :<|> "recipes" :> ReqBody '[JSON] Recipe :> Post '[JSON] Int64
+type RecipesAPI = GetRecipes :<|> PostRecipe :<|> PutRecipeIngredients
+
+type GetRecipes = "recipes" :> Get '[JSON] [Entity Recipe]
+
+type PostRecipe = "recipes" :> ReqBody '[JSON] Recipe :> Post '[JSON] Int64
+
+type PutRecipeIngredients = "recipes" :> Capture "userId" (Key Recipe)
+  :> "ingredients"
+  :> ReqBody '[JSON] [IngredientId] :> Put '[JSON] [Key RecipeIngredients]
 
 recipesAPI :: Proxy RecipesAPI
 recipesAPI = Proxy :: Proxy RecipesAPI
 
 recipesServer :: PGInfo -> Server RecipesAPI
-recipesServer info = getRecipesHandler info :<|> createRecipeHandler info
+recipesServer info = getRecipesHandler info
+  :<|> createRecipeHandler info
+  :<|> putRecipeHandler info
 
 getRecipesHandler :: PGInfo -> Handler [Entity Recipe]
 getRecipesHandler conn = liftIO $ selectRecipes conn
@@ -36,6 +46,10 @@ createRecipeHandler conn recipe = do
       (throwError
        $ err401 { errBody = "A recipe with that name already exists" })
 
--- createRecipe conn recipe
+putRecipeHandler
+  :: PGInfo -> RecipeId -> [IngredientId] -> Handler [Key RecipeIngredients]
+putRecipeHandler conn recipe ingredients =
+  liftIO $ setRecipeIngredients conn recipe ingredients
+
 runServer :: IO ()
 runServer = run 8000 (serve recipesAPI (recipesServer localConnString))

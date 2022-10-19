@@ -26,7 +26,10 @@ source-repository head
 library
   exposed-modules:
       Database
+      Migration
+      Repositories.Ingredient
       Repositories.Recipe
+      Schema
       Server
   other-modules:
       Paths_kurkuma
