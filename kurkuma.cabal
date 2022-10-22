@@ -40,6 +40,7 @@ library
       aeson
     , base >=4.7 && <5
     , containers
+    , esqueleto
     , monad-logger
     , mtl
     , persistent
@@ -62,6 +63,7 @@ executable kurkuma-exe
       aeson
     , base >=4.7 && <5
     , containers
+    , esqueleto
     , kurkuma
     , monad-logger
     , mtl
@@ -86,6 +88,7 @@ test-suite kurkuma-test
       aeson
     , base >=4.7 && <5
     , containers
+    , esqueleto
     , kurkuma
     , monad-logger
     , mtl

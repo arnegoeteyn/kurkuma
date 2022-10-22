@@ -22,7 +22,7 @@ type RecipesAPI =
 type GetRecipes = "recipes" :> Get '[JSON] [Entity Recipe]
 
 type GetRecipe = "recipes" :> Capture "recipeId" RecipeId
-  :> Get '[JSON] (Entity Recipe)
+  :> Get '[JSON] (Entity Recipe, [Entity Ingredient])
 
 type PostRecipe = "recipes" :> ReqBody '[JSON] Recipe :> Post '[JSON] Int64
 
@@ -42,7 +42,8 @@ recipesServer info = getRecipesHandler info
 getRecipesHandler :: PGInfo -> Handler [Entity Recipe]
 getRecipesHandler conn = liftIO $ selectRecipes conn
 
-getRecipeHandler :: PGInfo -> RecipeId -> Handler (Entity Recipe)
+getRecipeHandler
+  :: PGInfo -> RecipeId -> Handler (Entity Recipe, [Entity Ingredient])
 getRecipeHandler recipeId conn = do
   maybeRecipe <- liftIO $ selectRecipe recipeId conn
   case maybeRecipe of
