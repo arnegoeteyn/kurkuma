@@ -28,6 +28,10 @@ findRecipeWithTitle info title =
 selectRecipes :: PGInfo -> IO [Entity Recipe]
 selectRecipes conn = runAction conn $ selectList [] []
 
+selectRecipe :: PGInfo -> RecipeId -> IO (Maybe (Entity Recipe))
+selectRecipe conn recipeId =
+  runAction conn (selectFirst [RecipeId ==. recipeId] [])
+
 createRecipe :: PGInfo -> Recipe -> IO Int64
 createRecipe conn recipe = fromSqlKey <$> runAction conn (insert recipe)
 

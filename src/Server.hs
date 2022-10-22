@@ -16,9 +16,13 @@ import           Repositories.Recipe
 import           Servant (throwError)
 import           Schema
 
-type RecipesAPI = GetRecipes :<|> PostRecipe :<|> PutRecipeIngredients
+type RecipesAPI =
+  GetRecipes :<|> GetRecipe :<|> PostRecipe :<|> PutRecipeIngredients
 
 type GetRecipes = "recipes" :> Get '[JSON] [Entity Recipe]
+
+type GetRecipe = "recipes" :> Capture "recipeId" RecipeId
+  :> Get '[JSON] (Entity Recipe)
 
 type PostRecipe = "recipes" :> ReqBody '[JSON] Recipe :> Post '[JSON] Int64
 
@@ -31,11 +35,20 @@ recipesAPI = Proxy :: Proxy RecipesAPI
 
 recipesServer :: PGInfo -> Server RecipesAPI
 recipesServer info = getRecipesHandler info
+  :<|> getRecipeHandler info
   :<|> createRecipeHandler info
   :<|> putRecipeHandler info
 
 getRecipesHandler :: PGInfo -> Handler [Entity Recipe]
 getRecipesHandler conn = liftIO $ selectRecipes conn
+
+getRecipeHandler :: PGInfo -> RecipeId -> Handler (Entity Recipe)
+getRecipeHandler recipeId conn = do
+  maybeRecipe <- liftIO $ selectRecipe recipeId conn
+  case maybeRecipe of
+    Just recipe -> return recipe
+    Nothing     -> Handler
+      (throwError $ err404 { errBody = "A recipe with that id can't be found" })
 
 createRecipeHandler :: PGInfo -> Recipe -> Handler Int64
 createRecipeHandler conn recipe = do
