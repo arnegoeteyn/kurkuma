@@ -21,4 +21,6 @@ import           Data.Aeson
 import           Database.Persist
 import           Data.Aeson.Types
 import           Database.Persist.Postgresql
-
+import           Database (PGInfo)
+import           Data.Int (Int64)
+import           Schema (Ingredient(Ingredient))
