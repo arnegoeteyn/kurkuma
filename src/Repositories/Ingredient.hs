@@ -21,6 +21,10 @@ import           Data.Aeson
 import           Database.Persist
 import           Data.Aeson.Types
 import           Database.Persist.Postgresql
-import           Database (PGInfo)
+import           Database (PGInfo, runAction)
 import           Data.Int (Int64)
 import           Schema (Ingredient(Ingredient))
+
+createIngredient
+  :: PGInfo -> Ingredient -> IO (Database.Persist.Postgresql.Key Ingredient)
+createIngredient conn ingredient = runAction conn (insert ingredient)

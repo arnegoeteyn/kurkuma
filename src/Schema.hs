@@ -11,6 +11,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Schema where
 
@@ -20,6 +21,8 @@ import           Data.Aeson
 import           Database.Persist
 import           Data.Aeson.Types
 import           Database.Persist.Postgresql
+import           Data.Aeson.Encoding
+import qualified Data.Aeson.Parser
 
 PTH.share
   [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
@@ -72,3 +75,24 @@ parseIngredient o = do
   iName <- o .: "name"
   iCategory <- o .: "category"
   return Ingredient { ingredientName = iName, ingredientCategory = iCategory }
+
+data PutRecipeIngredient = ExistingIngredient IngredientId
+                         | NewIngredient Ingredient
+  deriving (Show)
+
+instance FromJSON PutRecipeIngredient where
+  --   parseJSON (Number ingredientId) = pure
+  --     (fmap ExistingIngredient <$> (parseJSON ingredientId))
+  --   parseJSON ingredient =
+  --     withObject "Ingredient" (fmap NewIngredient <$> parseIngredient) ingredient
+  --   parseJSON (Object v) = case v .:? "id" of 
+  --     Just (Object h) -> ExistingIngredient <$> (h .: "id")
+  --     Just _          -> undefined
+  --     Nothing         -> NewIngredient <$> parseIngredient v
+  --   parseJSON _ = undefined
+  parseJSON (Object v) = do
+    maybeId :: Maybe IngredientId <- v .:? "id"
+    case maybeId of
+      Just ingredientId -> return $ ExistingIngredient ingredientId
+      Nothing           -> NewIngredient <$> parseIngredient v
+  parseJSON _ = undefined

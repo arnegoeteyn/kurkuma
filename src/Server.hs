@@ -27,8 +27,8 @@ type GetRecipe = "recipes" :> Capture "recipeId" RecipeId
 type PostRecipe = "recipes" :> ReqBody '[JSON] Recipe :> Post '[JSON] Int64
 
 type PutRecipeIngredients = "recipes" :> Capture "userId" (Key Recipe)
-  :> "ingredients"
-  :> ReqBody '[JSON] [IngredientId] :> Put '[JSON] [Key RecipeIngredients]
+  :> "ingredients" :> ReqBody '[JSON] [PutRecipeIngredient]
+  :> Put '[JSON] [Key RecipeIngredients]
 
 recipesAPI :: Proxy RecipesAPI
 recipesAPI = Proxy :: Proxy RecipesAPI
@@ -60,8 +60,10 @@ createRecipeHandler conn recipe = do
       (throwError
        $ err401 { errBody = "A recipe with that name already exists" })
 
-putRecipeHandler
-  :: PGInfo -> RecipeId -> [IngredientId] -> Handler [Key RecipeIngredients]
+putRecipeHandler :: PGInfo
+                 -> RecipeId
+                 -> [PutRecipeIngredient]
+                 -> Handler [Key RecipeIngredients]
 putRecipeHandler conn recipe ingredients =
   liftIO $ setRecipeIngredients conn recipe ingredients
 

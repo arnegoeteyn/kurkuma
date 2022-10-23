@@ -38,16 +38,19 @@ createRecipe :: PGInfo -> Recipe -> IO Int64
 createRecipe conn recipe = fromSqlKey <$> runAction conn (insert recipe)
 
 setRecipeIngredients
-  :: PGInfo -> RecipeId -> [IngredientId] -> IO [Key RecipeIngredients]
+  :: PGInfo -> RecipeId -> [PutRecipeIngredient] -> IO [Key RecipeIngredients]
 setRecipeIngredients conn recipeId ingredients = runAction conn
   $ do
     removeRecipeIngredientsStmt recipeId
-    inserts <- mapM insert recipeIngredients
+    creates <- mapM insertIfNotExists ingredients
+    inserts <- mapM insert (recipeIngredients creates)
     return inserts
   where
+    insertIfNotExists (NewIngredient ingredient) = insert ingredient
+    insertIfNotExists (ExistingIngredient i) = return i
+
     recipeIngredients = Prelude.map
       (\i -> RecipeIngredients recipeId i "homemade bbi")
-      ingredients
 
 getRecipeIngredients :: PGInfo -> RecipeId -> IO [Entity Ingredient]
 getRecipeIngredients conn recipeId =

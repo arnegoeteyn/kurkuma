@@ -33,7 +33,7 @@ dependencies:
 - warp
 - containers
 - esqueleto
-
+- unordered-containers
 
 ghc-options:
 - -Wall
