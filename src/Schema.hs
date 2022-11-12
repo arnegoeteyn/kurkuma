@@ -67,6 +67,10 @@ instance ToJSON (Entity Ingredient) where
     , "name" .= ingredientName ingredient
     , "category" .= ingredientCategory ingredient]
 
+instance ToJSON (Recipe) where
+  toJSON (recipe) = object
+    ["title" .= recipeTitle recipe, "category" .= recipeDescription recipe]
+
 instance FromJSON Ingredient where
   parseJSON = withObject "Ingredient" parseIngredient
 
@@ -81,18 +85,15 @@ data PutRecipeIngredient = ExistingIngredient IngredientId
   deriving (Show)
 
 instance FromJSON PutRecipeIngredient where
-  --   parseJSON (Number ingredientId) = pure
-  --     (fmap ExistingIngredient <$> (parseJSON ingredientId))
-  --   parseJSON ingredient =
-  --     withObject "Ingredient" (fmap NewIngredient <$> parseIngredient) ingredient
-  --   parseJSON (Object v) = case v .:? "id" of 
-  --     Just (Object h) -> ExistingIngredient <$> (h .: "id")
-  --     Just _          -> undefined
-  --     Nothing         -> NewIngredient <$> parseIngredient v
-  --   parseJSON _ = undefined
   parseJSON (Object v) = do
     maybeId :: Maybe IngredientId <- v .:? "id"
     case maybeId of
       Just ingredientId -> return $ ExistingIngredient ingredientId
       Nothing           -> NewIngredient <$> parseIngredient v
   parseJSON _ = undefined
+
+instance ToJSON PutRecipeIngredient where
+  toJSON (ExistingIngredient ingredientId) = object ["id" .= ingredientId]
+  toJSON (NewIngredient ingredient) = object
+    [ "name" .= ingredientName ingredient
+    , "category" .= ingredientCategory ingredient]

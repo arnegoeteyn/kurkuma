@@ -33,7 +33,11 @@ dependencies:
 - warp
 - containers
 - esqueleto
-- unordered-containers
+- servant-docs
+- wai
+- http-types
+- bytestring
+- katip
 
 ghc-options:
 - -Wall

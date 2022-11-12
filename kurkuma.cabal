@@ -31,6 +31,8 @@ library
       Repositories.Recipe
       Schema
       Server
+      Server.Ingredients
+      Server.Recipes
   other-modules:
       Paths_kurkuma
   hs-source-dirs:
@@ -39,17 +41,21 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , esqueleto
+    , http-types
+    , katip
     , monad-logger
     , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
     , servant
+    , servant-docs
     , servant-server
     , text
-    , unordered-containers
+    , wai
     , warp
   default-language: Haskell2010
 
@@ -63,8 +69,11 @@ executable kurkuma-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , esqueleto
+    , http-types
+    , katip
     , kurkuma
     , monad-logger
     , mtl
@@ -72,9 +81,10 @@ executable kurkuma-exe
     , persistent-postgresql
     , persistent-template
     , servant
+    , servant-docs
     , servant-server
     , text
-    , unordered-containers
+    , wai
     , warp
   default-language: Haskell2010
 
@@ -89,8 +99,11 @@ test-suite kurkuma-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , esqueleto
+    , http-types
+    , katip
     , kurkuma
     , monad-logger
     , mtl
@@ -98,8 +111,9 @@ test-suite kurkuma-test
     , persistent-postgresql
     , persistent-template
     , servant
+    , servant-docs
     , servant-server
     , text
-    , unordered-containers
+    , wai
     , warp
   default-language: Haskell2010

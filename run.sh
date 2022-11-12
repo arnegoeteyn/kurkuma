@@ -1,0 +1,1 @@
+C_INCLUDE_PATH="`xcrun --show-sdk-path`/usr/include/ffi" stack run --arch aarch64 kurkuma-exe -- -s

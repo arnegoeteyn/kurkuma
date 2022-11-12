@@ -15,15 +15,22 @@ import           Database
 import           Data.Int
 import           Database.Persist.Postgresql
 import           Schema
-import           Database.Esqueleto
-import           Control.Monad.Logger (LoggingT)
+import           Database.Esqueleto as E
+import           Control.Monad.Logger
 
 findRecipeWithTitle :: PGInfo -> Text -> IO (Maybe (Entity Recipe))
 findRecipeWithTitle info title = runAction info
   $ selectFirst [RecipeTitle Database.Persist.Postgresql.==. title] []
 
 selectRecipes :: PGInfo -> IO [Entity Recipe]
-selectRecipes conn = runAction conn $ selectList [] []
+selectRecipes conn = runAction conn
+  $ do
+    monadLoggerLog
+      loc
+      (pack "")
+      LevelInfo
+      (toLogStr $ pack "All recipes requested")
+    selectList [] []
 
 selectRecipe
   :: PGInfo -> RecipeId -> IO (Maybe (Entity Recipe, [Entity Ingredient]))
@@ -43,14 +50,12 @@ setRecipeIngredients conn recipeId ingredients = runAction conn
   $ do
     removeRecipeIngredientsStmt recipeId
     creates <- mapM insertIfNotExists ingredients
-    inserts <- mapM insert (recipeIngredients creates)
-    return inserts
+    mapM insert (recipeIngredients creates)
   where
     insertIfNotExists (NewIngredient ingredient) = insert ingredient
     insertIfNotExists (ExistingIngredient i) = return i
 
-    recipeIngredients = Prelude.map
-      (\i -> RecipeIngredients recipeId i "homemade bbi")
+    recipeIngredients = Prelude.map (\i -> RecipeIngredients recipeId i "1")
 
 getRecipeIngredients :: PGInfo -> RecipeId -> IO [Entity Ingredient]
 getRecipeIngredients conn recipeId =
@@ -60,14 +65,20 @@ getRecipeIngredientsStmt
   :: RecipeId -> SqlPersistT (LoggingT IO) [Entity Ingredient]
 getRecipeIngredientsStmt recipeId = select . from
   $ \(ingredients `InnerJoin` recipeIngredients) -> do
-    on
+    E.on
       $ (ingredients ^. IngredientId)
-      Database.Esqueleto.==. (recipeIngredients ^. RecipeIngredientsIngredient)
-    where_
-      $ (recipeIngredients ^. RecipeIngredientsRecipe)
-      Database.Esqueleto.==. val recipeId
+      E.==. (recipeIngredients ^. RecipeIngredientsIngredient)
+    where_ $ (recipeIngredients ^. RecipeIngredientsRecipe) E.==. val recipeId
     return ingredients
 
 removeRecipeIngredientsStmt :: RecipeId -> SqlPersistT (LoggingT IO) ()
 removeRecipeIngredientsStmt recipeId = deleteWhere
   [RecipeIngredientsRecipe Database.Persist.Postgresql.==. recipeId]
+
+loc :: Loc
+loc = Loc { loc_filename = "Recipe.hs"
+          , loc_module = ""
+          , loc_package = ""
+          , loc_start = (0, 0)
+          , loc_end = (0, 0)
+          }
