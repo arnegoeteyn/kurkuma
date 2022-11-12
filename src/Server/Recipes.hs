@@ -10,7 +10,7 @@ import Control.Monad.Cont
 import Control.Monad.Error.Class
 import Data.Int (Int64)
 import Database (PGInfo)
-import Database.Persist
+import Database.Persist hiding (delete)
 import Repositories.Recipe
 import Schema
 import Servant
@@ -26,6 +26,10 @@ data RecipeRoutes mode = RecipeRoutes
         mode :- "recipes"
             :> ReqBody '[JSON] Recipe
             :> Post '[JSON] Int64
+    , delete ::
+        mode :- "recipes"
+            :> Capture "recipeId" RecipeId
+            :> Delete '[JSON] ()
     , putRecipeIngredients ::
         mode :- "recipes" :> Capture "recipeId" RecipeId
             :> "ingredients"
@@ -40,6 +44,7 @@ recipesServer ctx =
         { list = getRecipesHandler ctx
         , find = getRecipeHandler ctx
         , create = createRecipeHandler ctx
+        , delete = deleteRecipeHandler ctx
         , putRecipeIngredients = putRecipeHandler ctx
         }
 
@@ -66,6 +71,8 @@ createRecipeHandler conn recipe = do
                 ( throwError $
                     err401{errBody = "A recipe with that name already exists"}
                 )
+deleteRecipeHandler :: PGInfo -> RecipeId -> Handler ()
+deleteRecipeHandler conn i = liftIO $ deleteRecipe conn i
 
 putRecipeHandler ::
     PGInfo ->

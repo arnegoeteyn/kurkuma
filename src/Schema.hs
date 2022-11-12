@@ -7,26 +7,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Schema where
 
+import Data.Aeson
+import Data.Aeson.Types
+import Data.Text
+import Database.Persist
+import Database.Persist.Postgresql
 import qualified Database.Persist.TH as PTH
-import           Data.Text
-import           Data.Aeson
-import           Database.Persist
-import           Data.Aeson.Types
-import           Database.Persist.Postgresql
-import           Data.Aeson.Encoding
-import qualified Data.Aeson.Parser
 
 PTH.share
-  [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
-  [PTH.persistLowerCase|
+    [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
+    [PTH.persistLowerCase|
 
     Recipe sql=recipes
         title Text
@@ -46,54 +44,62 @@ PTH.share
 
 -- Recipe
 instance ToJSON (Entity Recipe) where
-  toJSON (Entity recipeId recipe) = object
-    [ "id" .= recipeId
-    , "title" .= recipeTitle recipe
-    , "description" .= recipeDescription recipe]
+    toJSON (Entity recipeId recipe) =
+        object
+            [ "id" .= recipeId
+            , "title" .= recipeTitle recipe
+            , "description" .= recipeDescription recipe
+            ]
 
 instance FromJSON Recipe where
-  parseJSON = withObject "Recipe" parseRecipe
+    parseJSON = withObject "Recipe" parseRecipe
 
 parseRecipe :: Object -> Parser Recipe
 parseRecipe o = do
-  rTitle <- o .: "title"
-  rDescription <- o .: "description"
-  return Recipe { recipeTitle = rTitle, recipeDescription = rDescription }
+    rTitle <- o .: "title"
+    rDescription <- o .: "description"
+    return Recipe{recipeTitle = rTitle, recipeDescription = rDescription}
 
 -- Ingredient
 instance ToJSON (Entity Ingredient) where
-  toJSON (Entity ingredientId ingredient) = object
-    [ "id" .= ingredientId
-    , "name" .= ingredientName ingredient
-    , "category" .= ingredientCategory ingredient]
+    toJSON (Entity ingredientId ingredient) =
+        object
+            [ "id" .= ingredientId
+            , "name" .= ingredientName ingredient
+            , "category" .= ingredientCategory ingredient
+            ]
 
 instance ToJSON (Recipe) where
-  toJSON (recipe) = object
-    ["title" .= recipeTitle recipe, "category" .= recipeDescription recipe]
+    toJSON (recipe) =
+        object
+            ["title" .= recipeTitle recipe, "category" .= recipeDescription recipe]
 
 instance FromJSON Ingredient where
-  parseJSON = withObject "Ingredient" parseIngredient
+    parseJSON = withObject "Ingredient" parseIngredient
 
 parseIngredient :: Object -> Parser Ingredient
 parseIngredient o = do
-  iName <- o .: "name"
-  iCategory <- o .: "category"
-  return Ingredient { ingredientName = iName, ingredientCategory = iCategory }
+    iName <- o .: "name"
+    iCategory <- o .: "category"
+    return Ingredient{ingredientName = iName, ingredientCategory = iCategory}
 
-data PutRecipeIngredient = ExistingIngredient IngredientId
-                         | NewIngredient Ingredient
-  deriving (Show)
+data PutRecipeIngredient
+    = ExistingIngredient IngredientId
+    | NewIngredient Ingredient
+    deriving (Show)
 
 instance FromJSON PutRecipeIngredient where
-  parseJSON (Object v) = do
-    maybeId :: Maybe IngredientId <- v .:? "id"
-    case maybeId of
-      Just ingredientId -> return $ ExistingIngredient ingredientId
-      Nothing           -> NewIngredient <$> parseIngredient v
-  parseJSON _ = undefined
+    parseJSON (Object v) = do
+        maybeId :: Maybe IngredientId <- v .:? "id"
+        case maybeId of
+            Just ingredientId -> return $ ExistingIngredient ingredientId
+            Nothing -> NewIngredient <$> parseIngredient v
+    parseJSON _ = undefined
 
 instance ToJSON PutRecipeIngredient where
-  toJSON (ExistingIngredient ingredientId) = object ["id" .= ingredientId]
-  toJSON (NewIngredient ingredient) = object
-    [ "name" .= ingredientName ingredient
-    , "category" .= ingredientCategory ingredient]
+    toJSON (ExistingIngredient ingredientId) = object ["id" .= ingredientId]
+    toJSON (NewIngredient ingredient) =
+        object
+            [ "name" .= ingredientName ingredient
+            , "category" .= ingredientCategory ingredient
+            ]
