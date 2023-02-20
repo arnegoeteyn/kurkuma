@@ -1,26 +1,28 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Schema where
 
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Text
-import Database.Persist
-import Database.Persist.Postgresql
-import qualified Database.Persist.TH as PTH
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.Text
+import           Database.Persist
+import           Database.Persist.Postgresql
+import qualified Database.Persist.TH         as PTH
+import           GHC.Generics                (Generic)
 
 PTH.share
     [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
@@ -29,7 +31,7 @@ PTH.share
     Recipe sql=recipes
         title Text
         description Text
-        deriving Show Read
+        deriving Show Read Generic
 
     Ingredient sql=ingredients
         name Text
@@ -51,14 +53,7 @@ instance ToJSON (Entity Recipe) where
             , "description" .= recipeDescription recipe
             ]
 
-instance FromJSON Recipe where
-    parseJSON = withObject "Recipe" parseRecipe
-
-parseRecipe :: Object -> Parser Recipe
-parseRecipe o = do
-    rTitle <- o .: "title"
-    rDescription <- o .: "description"
-    return Recipe{recipeTitle = rTitle, recipeDescription = rDescription}
+instance FromJSON Recipe
 
 -- Ingredient
 instance ToJSON (Entity Ingredient) where
@@ -68,11 +63,6 @@ instance ToJSON (Entity Ingredient) where
             , "name" .= ingredientName ingredient
             , "category" .= ingredientCategory ingredient
             ]
-
-instance ToJSON (Recipe) where
-    toJSON (recipe) =
-        object
-            ["title" .= recipeTitle recipe, "category" .= recipeDescription recipe]
 
 instance FromJSON Ingredient where
     parseJSON = withObject "Ingredient" parseIngredient
@@ -93,7 +83,7 @@ instance FromJSON PutRecipeIngredient where
         maybeId :: Maybe IngredientId <- v .:? "id"
         case maybeId of
             Just ingredientId -> return $ ExistingIngredient ingredientId
-            Nothing -> NewIngredient <$> parseIngredient v
+            Nothing           -> NewIngredient <$> parseIngredient v
     parseJSON _ = undefined
 
 instance ToJSON PutRecipeIngredient where

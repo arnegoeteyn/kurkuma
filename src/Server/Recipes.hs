@@ -59,8 +59,7 @@ recipesServer ctx =
 getRecipesHandler :: PGInfo -> Handler [Entity Recipe]
 getRecipesHandler conn = liftIO $ selectRecipes conn
 
-getRecipeHandler ::
-  PGInfo -> RecipeId -> Handler (Entity Recipe, [Entity Ingredient])
+getRecipeHandler :: PGInfo -> RecipeId -> Handler (Entity Recipe, [Entity Ingredient])
 getRecipeHandler recipeId conn = do
   maybeRecipe <- liftIO $ selectRecipe recipeId conn
   case maybeRecipe of
@@ -83,10 +82,6 @@ createRecipeHandler conn recipe = do
 deleteRecipeHandler :: PGInfo -> RecipeId -> Handler ()
 deleteRecipeHandler conn i = liftIO $ deleteRecipe conn i
 
-putRecipeHandler ::
-  PGInfo ->
-  RecipeId ->
-  [PutRecipeIngredient] ->
-  Handler [RecipeIngredientsId]
+putRecipeHandler :: PGInfo -> RecipeId -> [PutRecipeIngredient] -> Handler [RecipeIngredientsId]
 putRecipeHandler conn recipe ingredients =
   liftIO $ setRecipeIngredients conn recipe ingredients

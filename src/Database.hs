@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Database where
+module Database  where
 
 import           Control.Monad.Logger
 import           Control.Monad.Reader (runReaderT)

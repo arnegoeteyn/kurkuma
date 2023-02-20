@@ -1,30 +1,30 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeOperators         #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Server where
 
-import           Servant.Server
 import           Data.Data
-import           Database (localConnString)
+import           Database                 (localConnString)
 import           Network.Wai.Handler.Warp (run)
 import           Servant.API
-import           Server.Recipes (recipesServer, RecipeRoutes)
 import           Servant.API.Generic
+import           Servant.Server
 import           Server.Ingredients
+import           Server.Recipes           (RecipeRoutes, recipesServer)
 
 type KurkumaAPI = NamedRoutes NamedAPI
 
 data NamedAPI mode =
-  KurkumaRoutes { recipes :: mode :- NamedRoutes RecipeRoutes
+  KurkumaRoutes { recipes     :: mode :- NamedRoutes RecipeRoutes
                 , ingredients :: mode :- NamedRoutes IngredientRoutes
                 }
   deriving Generic
