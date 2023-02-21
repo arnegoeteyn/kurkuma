@@ -8,11 +8,11 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Database (PGInfo, runAction)
 import Database.Esqueleto.Experimental as E
-import Database.Persist.Postgresql
-import Schema (EntityField (IngredientId, IngredientName), Ingredient, Key (IngredientKey))
+import Database.Persist.Postgresql as P
+import Schema (EntityField (IngredientId, IngredientName, RecipeIngredientsIngredient), Ingredient, Key (IngredientKey))
 
 createIngredient ::
-  PGInfo -> Ingredient -> IO (Database.Persist.Postgresql.Key Ingredient)
+  PGInfo -> Ingredient -> IO (P.Key Ingredient)
 createIngredient conn ingredient = runAction conn (insert ingredient)
 
 getDuplicateIngredients :: PGInfo -> IO [(Int, Text)]
@@ -32,12 +32,22 @@ getDuplicateIngredientsStmt = E.select $
 
 mergeDuplicateIngredients :: PGInfo -> Text -> IO (Maybe Int64)
 mergeDuplicateIngredients conn key = runAction conn $ do
-  earliestKey <- earliestDuplicateStmt key
-  let z = Prelude.map (fmap fromSqlKey) earliestKey
-  r z
+  ents <- duplicates key
+  let (earliestKey, tail_) = firstIngredient ents
+  case earliestKey of
+    Just x -> do
+      mapM_ (mergeDuplicatesStmt x) tail_
+      mapM_ deleteDuplicatesStmt tail_
+    Nothing -> return ()
+  mapM_ (\e -> mapM_ (mergeDuplicatesStmt e) tail_) earliestKey
+  let maybeId = fmap fromSqlKey earliestKey
+  return maybeId
   where
-    r (x : _) = return $ Just (E.unValue x)
-    r _ = return Nothing
+    firstIngredient (x : xs) = (Just (entityKey x), map entityKey xs)
+    firstIngredient _ = (Nothing, [])
+
+duplicates :: Text -> SqlPersistT (LoggingT IO) [Entity Ingredient]
+duplicates key = selectList [IngredientName P.==. key] []
 
 earliestDuplicateStmt :: Text -> SqlPersistT (LoggingT IO) [E.Value (Key Ingredient)]
 earliestDuplicateStmt key = E.select $ do
@@ -47,5 +57,13 @@ earliestDuplicateStmt key = E.select $ do
     let min' = ingredients E.^. persistIdField
     pure min'
 
-mergeDuplicatesStmt :: String -> SqlPersistT (LoggingT IO) Int64
-mergeDuplicatesStmt key = undefined
+mergeDuplicatesStmt :: Key Ingredient -> Key Ingredient -> SqlPersistT (LoggingT IO) ()
+mergeDuplicatesStmt to_ from_ = do
+  E.update $ \ri -> do
+    E.set ri [RecipeIngredientsIngredient E.=. val to_]
+    E.where_ (ri E.^. RecipeIngredientsIngredient E.==. val from_)
+
+deleteDuplicatesStmt :: Key Ingredient -> SqlPersistT (LoggingT IO) ()
+deleteDuplicatesStmt from_ = E.delete $ do
+    i <- from $ table @Ingredient
+    E.where_ (i E.^. IngredientId E.==. val from_)
