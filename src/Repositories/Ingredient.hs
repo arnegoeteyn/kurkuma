@@ -9,7 +9,7 @@ import Data.Text (Text)
 import Database (PGInfo, runAction)
 import Database.Esqueleto.Experimental as E
 import Database.Persist.Postgresql as P
-import Schema (EntityField (IngredientId, IngredientName, RecipeIngredientsIngredient), Ingredient, Key (IngredientKey))
+import Schema (EntityField (IngredientId, IngredientName, RecipeIngredientsIngredient), Ingredient)
 
 createIngredient ::
   PGInfo -> Ingredient -> IO (P.Key Ingredient)
@@ -39,23 +39,13 @@ mergeDuplicateIngredients conn key = runAction conn $ do
       mapM_ (mergeDuplicatesStmt x) tail_
       mapM_ deleteDuplicatesStmt tail_
     Nothing -> return ()
-  mapM_ (\e -> mapM_ (mergeDuplicatesStmt e) tail_) earliestKey
-  let maybeId = fmap fromSqlKey earliestKey
-  return maybeId
+  return $ fmap fromSqlKey earliestKey
   where
     firstIngredient (x : xs) = (Just (entityKey x), map entityKey xs)
     firstIngredient _ = (Nothing, [])
 
 duplicates :: Text -> SqlPersistT (LoggingT IO) [Entity Ingredient]
 duplicates key = selectList [IngredientName P.==. key] []
-
-earliestDuplicateStmt :: Text -> SqlPersistT (LoggingT IO) [E.Value (Key Ingredient)]
-earliestDuplicateStmt key = E.select $ do
-  do
-    ingredients <- E.from $ E.table @Ingredient
-    E.where_ (ingredients E.^. IngredientName E.==. val key)
-    let min' = ingredients E.^. persistIdField
-    pure min'
 
 mergeDuplicatesStmt :: Key Ingredient -> Key Ingredient -> SqlPersistT (LoggingT IO) ()
 mergeDuplicatesStmt to_ from_ = do
